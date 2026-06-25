@@ -215,7 +215,14 @@ class TrainPipelineConfig(HubMixin):
             self.optimizer = active_cfg.get_optimizer_preset()
             self.scheduler = active_cfg.get_scheduler_preset()
 
-        if hasattr(active_cfg, "push_to_hub") and active_cfg.push_to_hub and not active_cfg.repo_id:
+        # Remote runs auto-generate the repo_id in submit_to_hf (the policy may only be
+        # resolved here, from --policy.path), so don't demand it up front for them.
+        if (
+            hasattr(active_cfg, "push_to_hub")
+            and active_cfg.push_to_hub
+            and not active_cfg.repo_id
+            and not self.job.is_remote
+        ):
             raise ValueError("'repo_id' argument missing. Please specify it to push the model to the hub.")
 
         if self.save_checkpoint_to_hub and not (self.policy is not None and self.policy.repo_id):
