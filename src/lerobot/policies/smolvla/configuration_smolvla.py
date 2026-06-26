@@ -44,6 +44,10 @@ class SmolVLAConfig(PreTrainedConfig):
     max_state_dim: int = 32
     max_action_dim: int = 32
 
+    # Optional observation fields to concatenate to observation.state before the state projection.
+    # Useful for low-dimensional tactile features such as observation.tactile.force.
+    tactile_feature_keys: tuple[str, ...] = ()
+
     # Image preprocessing
     resize_imgs_with_padding: tuple[int, int] = (512, 512)
 

@@ -469,8 +469,27 @@ class SmolVLAPolicy(PreTrainedPolicy):
         return actions
 
     def prepare_state(self, batch):
-        """Pad state"""
+        """Prepare proprioception and optional low-dimensional tactile features."""
         state = batch[OBS_STATE][:, -1, :] if batch[OBS_STATE].ndim > 2 else batch[OBS_STATE]
+        tactile_features = []
+        for key in self.config.tactile_feature_keys:
+            if key not in batch:
+                raise ValueError(
+                    f"Tactile feature '{key}' is configured for SmolVLA but missing from the batch. "
+                    f"Available keys: {sorted(batch.keys())}"
+                )
+            tactile = batch[key][:, -1, ...] if batch[key].ndim > 2 else batch[key]
+            tactile_features.append(tactile.flatten(start_dim=1))
+
+        if tactile_features:
+            state = torch.cat([state, *tactile_features], dim=-1)
+            if state.shape[-1] > self.config.max_state_dim:
+                raise ValueError(
+                    f"State plus tactile features has dimension {state.shape[-1]}, which exceeds "
+                    f"config.max_state_dim={self.config.max_state_dim}. Increase max_state_dim or use fewer "
+                    "tactile features."
+                )
+
         state = pad_vector(state, self.config.max_state_dim)
         return state
 
